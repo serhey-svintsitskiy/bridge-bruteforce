@@ -180,7 +180,7 @@ class BridgeBruteforce
      */
     private function checkPath()
     {
-        return $this->path > 25;
+        return $this->path > self::MIN_ALLOWED_PATH_LENGTH;
     }
 
     /**
