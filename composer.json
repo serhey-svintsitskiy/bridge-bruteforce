@@ -1,0 +1,21 @@
+{
+  "name": "serhey-svintsitskiy/cryptogramm",
+  "description": "Brute-force attack for game bridge",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Sergey Svintitskiy",
+      "email": "sergeys08.sv@gmail.com"
+    }
+  ],
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  },
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "sergo_sv\\": "src/sergo_sv"
+    }
+  }
+}
