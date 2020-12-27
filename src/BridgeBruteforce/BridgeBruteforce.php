@@ -4,21 +4,14 @@ declare(strict_types=1);
 
 namespace BridgeBruteforce;
 
-use RuntimeException;
-
 class BridgeBruteforce
 {
     private const MIN_ALLOWED_PATH_LENGTH = 25;
+    private const MAX_MOVE_COUNT = 5;
 
-    private array $log = [];
-
-    private float $min = INF;
+    private int $minPath = PHP_INT_MAX;
     
     private array $all = [];
-
-    public function __construct()
-    {
-    }
 
     public static function start(array $movers)
     {
@@ -26,67 +19,65 @@ class BridgeBruteforce
         return $bruteforcer->bruteforce($movers);
     }
 
-    public function bruteforce(array $movers): string
+    public function bruteforce(array $movers): array
     {
+        $this->minPath = PHP_INT_MAX;
+        $this->all = [];
         $firstMoveForward = true;
-        [$a, $b, $path] = $this->multiply($firstMoveForward, $movers, [], 0);
+        $this->multiply($firstMoveForward, $movers);
 
-        return $this->getLog();
+        return [$this->minPath, $this->getMovesByPath($this->minPath)];
     }
-
-    public function getLog(): string
+    
+    public function getMovesByPath(int $path): array 
     {
-        $strlog = "Result:\n";
-        foreach ($this->log as $logIndex => $logItem){
-            $strlog .= "".($logIndex+1).". (".$logItem[0].") (".max($logItem[1]).") [".implode(',', $logItem[1])."];\n";
-        }
-
-        return $strlog;
-    }
-
-    private function multiply(bool $isForward, array $a, array $b, int $path): ?array
-    {
-        $side = ($isForward) ? $a : $b;
-        $count = ($isForward) ? 2 : 1;
         $result = [];
         
-        $combination = self::getComb($side, $count);
-        foreach ($combination as $movers) {
-            if ($isForward) {
-                [$a, $b, $path] = $this->move($movers, $a, $b, $path);
-            } else {
-                [$b, $a, $path] = $this->move($movers, $b, $a, $path);
+        foreach ($this->all as $solution) {
+            if ($solution[0] === $path) {
+                $result[] = $solution[1];
             }
-            
-            if (!empty($a)) {
-                $result[] = $this->multiply(!$isForward, $a, $b, $path);
-            }
-
-            $this->all[] = $path;
-            $this->min = min($this->min, $path);
-            return [$a, $b, $path];
         }
         
         return $result;
     }
 
-    public function tryToMove(array $movers, bool $isForward, array $a, array $b, int $path): array
+    private function multiply(bool $isForward, array $a, array $b = [], int $path = 0, int $i = 0, array $log = []): void
     {
-        $save = [$a, $b, $path];
-
-        [$a, $b, $path] = $isForward ? $this->move($movers, $a, $b, $path) : $this->move($movers, $b, $a, $path);
-
-        if ($path > self::MIN_ALLOWED_PATH_LENGTH) {
-            [$a, $b, $path] = $save;
-        }
+        $side = ($isForward) ? $a : $b;
+        $count = ($isForward) ? 2 : 1;
         
-        //$this->addLog($isForward ? '+' : '-', $movers);
-        return [$a, $b, $path];
+        $combination = self::getComb($side, $count);
+        foreach ($combination as $movers) {
+            $this->doMove($movers, $isForward, $a, $b, $path, $i, $log);
+        }
     }
 
-    private function addLog(string $dir, array $movers, int $path = 0): void
-    {
-        $this->log[] = [$dir, $movers, $path];
+    public function doMove(
+        array $movers,
+        bool $isForward,
+        array $a,
+        array $b = [],
+        int $path = 0,
+        int $i = 0,
+        array $log = []
+    ): void {
+        if ($isForward) {
+            [$a, $b, $path] = $this->move($movers, $a, $b, $path);
+        } else {
+            [$b, $a, $path] = $this->move($movers, $b, $a, $path);
+        }
+        $log[] = [$isForward, $movers];
+
+        if (empty($a) || $i > self::MAX_MOVE_COUNT) {
+            if ($path > self::MIN_ALLOWED_PATH_LENGTH) {
+                return;
+            }
+            $this->all[] = [$path, $log];
+            $this->minPath = min($this->minPath, $path);
+        } else {
+            $this->multiply(!$isForward, $a, $b, $path, $i + 1, $log);
+        }
     }
 
     private function move(array $movers, array $from, array $to, int $path): array

@@ -27,18 +27,17 @@ class BridgeBruteforceTest extends TestCase
 
     public function testBruteforce(): void
     {
-        $movers = [1, 2, 5, 10];
         $bruteforcer = new BridgeBruteforce();
-        $bruteforcer->bruteforce($movers);
-
-        self::assertTrue(true);
+        [$minPath,] = $bruteforcer->bruteforce([1, 2, 5, 10]);
+        
+        self::assertEquals(17, $minPath);
     }
 
     public function testSimpleMove(): void
     {
         $bruteforcer = new BridgeBruteforce();
         [$a, $b, $path] = $this->callMethod($bruteforcer, 'move', [[1, 2], [1, 2, 5, 10], [], 0]);
-        //[$a, $b, $path] = $this->callMethod($bruteforcer, 'move', [[1, 2], $b, $a, $path]);
+
         self::assertEquals([5, 10], array_values($a));
         self::assertEquals([1, 2], $b);
         self::assertEquals(2, $path);
