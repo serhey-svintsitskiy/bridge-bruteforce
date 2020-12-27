@@ -12,10 +12,20 @@
     "optimize-autoloader": true,
     "sort-packages": true
   },
-  "require": {},
+  "require": {
+    "php": "^7.4"
+  },
   "autoload": {
     "psr-4": {
-      "sergo_sv\\": "src/sergo_sv"
+      "BridgeBruteforce\\": "src/BridgeBruteforce"
     }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "tests\\BridgeBruteforce\\": "tests/BridgeBruteforce/"
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9"
   }
 }

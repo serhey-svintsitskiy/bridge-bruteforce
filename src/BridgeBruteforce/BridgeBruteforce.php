@@ -2,14 +2,10 @@
 
 declare(strict_types=1);
 
-namespace sergo_sv\bridge_bruteforce;
+namespace BridgeBruteforce;
 
 use RuntimeException;
 
-/**
- * Class BridgeBruteforce
- * @package sergo_sv\bridge_bruteforce
- */
 class BridgeBruteforce
 {
     private const MIN_ALLOWED_PATH_LENGTH = 25;
@@ -72,9 +68,6 @@ class BridgeBruteforce
 
     public function tryToMove(array $movers, bool $isForward): bool
     {
-//        $a = $this->a;
-//        $b = $this->b;
-//        $path = $this->path;
         $save = [$this->a, $this->b, $this->path];
         
         if ($isForward) {
@@ -88,9 +81,7 @@ class BridgeBruteforce
             return true;
         }
         [$this->a, $this->b, $this->path] = $save;
-//            $this->a = $a;
-//            $this->b = $b;
-//            $this->path = $path;
+        
         return false;
     }
 
