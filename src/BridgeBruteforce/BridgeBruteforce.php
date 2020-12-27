@@ -10,41 +10,33 @@ class BridgeBruteforce
 {
     private const MIN_ALLOWED_PATH_LENGTH = 25;
 
-    private array $a;
+    private array $log = [];
 
-    private array $b;
+    private float $min = INF;
+    
+    private array $all = [];
 
-    private array $log;
-
-    private int $path;
-
-    public function __construct(array $movers)
+    public function __construct()
     {
-        $this->a = $movers;
-        $this->b = [];
-        $this->log = [];
-        $this->path = 0;
     }
 
     public static function start(array $movers)
     {
-        $bruteforcer = new self($movers);
-        return $bruteforcer->bruteforce();
+        $bruteforcer = new self();
+        return $bruteforcer->bruteforce($movers);
     }
 
-    public function bruteforce(): string
+    public function bruteforce(array $movers): string
     {
         $firstMoveForward = true;
-        if (!$this->multiply($firstMoveForward)) {
-            throw new RuntimeException('Something went wrong');
-        }
+        [$a, $b, $path] = $this->multiply($firstMoveForward, $movers, [], 0);
 
         return $this->getLog();
     }
 
     public function getLog(): string
     {
-        $strlog = "Result:\nPath=$this->path.\n";
+        $strlog = "Result:\n";
         foreach ($this->log as $logIndex => $logItem){
             $strlog .= "".($logIndex+1).". (".$logItem[0].") (".max($logItem[1]).") [".implode(',', $logItem[1])."];\n";
         }
@@ -52,66 +44,58 @@ class BridgeBruteforce
         return $strlog;
     }
 
-    private function multiply(bool $isForward): bool
+    private function multiply(bool $isForward, array $a, array $b, int $path): ?array
     {
-        $side = ($isForward) ? $this->a : $this->b;
+        $side = ($isForward) ? $a : $b;
         $count = ($isForward) ? 2 : 1;
-        foreach (self::getComb($side, $count) as $movers) {
-            if (!$this->tryToMove($movers, $isForward)) {
-                continue;
+        $result = [];
+        
+        $combination = self::getComb($side, $count);
+        foreach ($combination as $movers) {
+            if ($isForward) {
+                [$a, $b, $path] = $this->move($movers, $a, $b, $path);
+            } else {
+                [$b, $a, $path] = $this->move($movers, $b, $a, $path);
             }
             
-            return $this->checkWin() ?: $this->multiply(!$isForward);
-        }
-        return false;
-    }
+            if (!empty($a)) {
+                $result[] = $this->multiply(!$isForward, $a, $b, $path);
+            }
 
-    public function tryToMove(array $movers, bool $isForward): bool
-    {
-        $save = [$this->a, $this->b, $this->path];
+            $this->all[] = $path;
+            $this->min = min($this->min, $path);
+            return [$a, $b, $path];
+        }
         
-        if ($isForward) {
-            $this->moveForward($movers);
-        } else {
-            $this->moveBack($movers);
-        }
+        return $result;
+    }
 
-        if ($this->path <= self::MIN_ALLOWED_PATH_LENGTH) {
-            $this->addLog($isForward ? '+' : '-', $movers);
-            return true;
+    public function tryToMove(array $movers, bool $isForward, array $a, array $b, int $path): array
+    {
+        $save = [$a, $b, $path];
+
+        [$a, $b, $path] = $isForward ? $this->move($movers, $a, $b, $path) : $this->move($movers, $b, $a, $path);
+
+        if ($path > self::MIN_ALLOWED_PATH_LENGTH) {
+            [$a, $b, $path] = $save;
         }
-        [$this->a, $this->b, $this->path] = $save;
         
-        return false;
+        //$this->addLog($isForward ? '+' : '-', $movers);
+        return [$a, $b, $path];
     }
 
-    private function calcPath(array $movers): void
+    private function addLog(string $dir, array $movers, int $path = 0): void
     {
-        $this->path += max($movers);
+        $this->log[] = [$dir, $movers, $path];
     }
 
-    private function addLog(string $dir, array $movers): void
+    private function move(array $movers, array $from, array $to, int $path): array
     {
-        $this->log[] = [$dir, $movers];
-    }
-
-    private function moveForward(array $movers): void
-    {
-        $this->a = array_diff($this->a, $movers);
-        $this->b = array_merge($this->b, $movers);
-        $this->calcPath($movers);
-    }
-
-    private function moveBack(array $movers): void
-    {
-        $this->b = array_diff($this->b, $movers);
-        $this->a = array_merge($this->a, $movers);
-        $this->calcPath($movers);
-    }
-
-    private function checkWin(): bool
-    {
-        return count($this->a) === 0;
+        $from = array_diff($from, $movers);
+        $to = array_merge($to, $movers);
+        $path += max($movers);
+        
+        return [$from, $to, $path];
     }
 
     private static function getComb(array $set = [], int $size = 0): array
