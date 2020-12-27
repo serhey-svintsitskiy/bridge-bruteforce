@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace sergo_sv\bridge_bruteforce;
+
+use RuntimeException;
 
 /**
  * Class BridgeBruteforce
@@ -8,81 +12,51 @@ namespace sergo_sv\bridge_bruteforce;
  */
 class BridgeBruteforce
 {
+    private const MIN_ALLOWED_PATH_LENGTH = 25;
 
-    const MIN_ALLOWED_PATH_LENGTH = 25;
-    /**
-     * @var array
-     */
-    private $movers = [];
-    /**
-     * @var array
-     */
-    private $a = [];
-    /**
-     * @var array
-     */
-    private $b = [];
-    /**
-     * @var array
-     */
-    private $log = [];
-    /**
-     * @var int
-     */
-    private $path = 0;
+    private array $a;
 
-    /**
-     * Bridge constructor.
-     * @param array $movers
-     */
+    private array $b;
+
+    private array $log;
+
+    private int $path;
+
     public function __construct(array $movers)
     {
-        $this->movers = $movers;
-        $this->a = $this->movers;
+        $this->a = $movers;
         $this->b = [];
         $this->log = [];
         $this->path = 0;
     }
 
-    /**
-     * @param array $movers
-     * @return array
-     */
     public static function start(array $movers)
     {
         $bruteforcer = new self($movers);
         return $bruteforcer->bruteforce();
     }
 
-    /**
-     * @return array|string
-     */
-    public function bruteforce()
+    public function bruteforce(): string
     {
-        if ($this->multiply(true)) {
-            return $this->getLog();
-        } else {
-            return 'Something went wrong.';
+        $firstMoveForward = true;
+        if (!$this->multiply($firstMoveForward)) {
+            throw new RuntimeException('Something went wrong');
         }
+
+        return $this->getLog();
     }
 
-    /**
-     * @return string
-     */
-    public function getLog()
+    public function getLog(): string
     {
         $strlog = "Result:\nPath=$this->path.\n";
         foreach ($this->log as $logIndex => $logItem){
             $strlog .= "".($logIndex+1).". (".$logItem[0].") (".max($logItem[1]).") [".implode(',', $logItem[1])."];\n";
         }
+
         return $strlog;
     }
 
-    /**
-     * @param bool $isForward
-     * @return bool
-     */
-    private function multiply($isForward)
+    private function multiply(bool $isForward): bool
     {
         $side = ($isForward) ? $this->a : $this->b;
         $count = ($isForward) ? 2 : 1;
@@ -90,113 +64,76 @@ class BridgeBruteforce
             if (!$this->tryToMove($movers, $isForward)) {
                 continue;
             }
-            if ($this->checkWin()) {
-                return true;
-            } else {
-                return $this->multiply(!$isForward);
-            }
+            
+            return $this->checkWin() ?: $this->multiply(!$isForward);
         }
         return false;
     }
 
-    /**
-     * @param $movers
-     * @param $isForward
-     * @return bool
-     */
-    public function tryToMove($movers, $isForward)
+    public function tryToMove(array $movers, bool $isForward): bool
     {
-        $a = $this->a;
-        $b = $this->b;
-        $log = $this->log;
-        $path = $this->path;
+//        $a = $this->a;
+//        $b = $this->b;
+//        $path = $this->path;
+        $save = [$this->a, $this->b, $this->path];
+        
         if ($isForward) {
             $this->moveForward($movers);
         } else {
             $this->moveBack($movers);
         }
 
-        if ($this->checkPath()) {
-            $this->a = $a;
-            $this->b = $b;
-            $this->log = $log;
-            $this->path = $path;
-            return false;
-        } else {
+        if ($this->path <= self::MIN_ALLOWED_PATH_LENGTH) {
+            $this->addLog($isForward ? '+' : '-', $movers);
             return true;
         }
+        [$this->a, $this->b, $this->path] = $save;
+//            $this->a = $a;
+//            $this->b = $b;
+//            $this->path = $path;
+        return false;
     }
 
-    /**
-     * @param array $movers
-     */
-    private function calcPath($movers)
+    private function calcPath(array $movers): void
     {
         $this->path += max($movers);
     }
 
-    /**
-     * @param string $dir
-     * @param array $movers
-     */
-    private function addLog($dir, $movers)
+    private function addLog(string $dir, array $movers): void
     {
         $this->log[] = [$dir, $movers];
     }
 
-
-    /**
-     * @param array $forwardMovers
-     */
-    private function moveForward($forwardMovers)
+    private function moveForward(array $movers): void
     {
-        $this->a = array_diff($this->a, $forwardMovers);
-        $this->b = array_merge($this->b, $forwardMovers);
-        $this->calcPath($forwardMovers);
-        $this->addLog('+', $forwardMovers);
+        $this->a = array_diff($this->a, $movers);
+        $this->b = array_merge($this->b, $movers);
+        $this->calcPath($movers);
     }
 
-    /**
-     * @param array $backMovers
-     */
-    private function moveBack($backMovers)
+    private function moveBack(array $movers): void
     {
-        $this->b = array_diff($this->b, $backMovers);
-        $this->a = array_merge($this->a, $backMovers);
-        $this->calcPath($backMovers);
-        $this->addLog('-', $backMovers);
+        $this->b = array_diff($this->b, $movers);
+        $this->a = array_merge($this->a, $movers);
+        $this->calcPath($movers);
     }
 
-    /**
-     * @return bool
-     */
-    private function checkWin()
+    private function checkWin(): bool
     {
-        return count($this->a) ? false : true;
+        return count($this->a) === 0;
     }
 
-    /**
-     * @return bool
-     */
-    private function checkPath()
+    private static function getComb(array $set = [], int $size = 0): array
     {
-        return $this->path > self::MIN_ALLOWED_PATH_LENGTH;
-    }
-
-    /**
-     * @param array $set
-     * @param int $size
-     * @return array
-     */
-    private static function getComb($set = [], $size = 0)
-    {
-        if ($size == 0) {
+        if (!$size) {
             return [[]];
         }
-        if ($set == []) {
+        if (empty($set)) {
             return [];
         }
+
         $prefix = [array_shift($set)];
+
         $result = [];
         foreach (self::getComb($set, $size - 1) as $suffix) {
             $result[] = array_merge($prefix, $suffix);
@@ -204,6 +141,7 @@ class BridgeBruteforce
         foreach (self::getComb($set, $size) as $next) {
             $result[] = $next;
         }
+
         return $result;
     }
 }
